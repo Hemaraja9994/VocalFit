@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, spacing, borderRadius, typography } from '../../utils/theme';
 import { VFI_ITEMS, VFI_SCALE_OPTIONS, VFI_FACTOR_LABELS, rateVFI } from '../../data/vfiItems';
+import { useStore } from '../../store/useStore';
 
 const ITEMS_PER_PAGE = 5;
 const TOTAL_PAGES = Math.ceil(VFI_ITEMS.length / ITEMS_PER_PAGE);
@@ -54,6 +55,20 @@ export default function VFIScreen({ navigation }: any) {
 
   const handleFinish = () => {
     const severity = rateVFI(factorScores.fatigue, factorScores.physical_discomfort);
+
+    // Save VFI results to the store
+    const store = useStore.getState();
+    if (!store.currentAssessment) {
+      store.startAssessment();
+    }
+    store.updateVFI({
+      fatigue: factorScores.fatigue,
+      physicalDiscomfort: factorScores.physical_discomfort,
+      restRecovery: factorScores.rest_recovery,
+      totalScore: totalScore,
+      severity: severity as any,
+    });
+
     Alert.alert(
       'VFI Complete',
       `Fatigue Burden: ${fatigueBurden}/80 (${severity})\n\n` +

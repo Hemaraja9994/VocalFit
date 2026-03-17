@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { colors, spacing, borderRadius, typography } from '../utils/theme';
 import { SectionRow } from '../components/common/SectionRow';
+import { useStore } from '../store/useStore';
 
 const ASSESSMENT_ITEMS = [
   { id: 'MPT', title: 'Maximum phonation time', subtitle: 'Sustain /a/ as long as possible', color: colors.primary, icon: '🎤' },
@@ -19,6 +20,15 @@ const ASSESSMENT_ITEMS = [
 ];
 
 export default function AssessmentHubScreen({ navigation }: any) {
+  const assessments = useStore((s) => s.assessments);
+  const latest = assessments.length > 0 ? assessments[assessments.length - 1] : null;
+  const hasData = latest !== null;
+
+  const formatDate = (iso: string) => {
+    const d = new Date(iso);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
   return (
     <View style={styles.screen}>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -30,26 +40,28 @@ export default function AssessmentHubScreen({ navigation }: any) {
         <View style={styles.lastAssessment}>
           <View style={styles.lastAssessmentHeader}>
             <Text style={styles.lastAssessmentLabel}>Last assessment</Text>
-            <Text style={styles.lastAssessmentDate}>Mar 15, 2026</Text>
+            <Text style={styles.lastAssessmentDate}>{hasData ? formatDate(latest!.date) : 'No data yet'}</Text>
           </View>
           <View style={styles.lastAssessmentScores}>
             <View style={styles.miniScore}>
-              <Text style={styles.miniScoreValue}>78</Text>
+              <Text style={styles.miniScoreValue}>{hasData ? latest!.vocalFitnessScore : '—'}</Text>
               <Text style={styles.miniScoreLabel}>Vocal score</Text>
             </View>
             <View style={styles.miniScoreDivider} />
             <View style={styles.miniScore}>
-              <Text style={styles.miniScoreValue}>18.2s</Text>
+              <Text style={styles.miniScoreValue}>{hasData ? `${latest!.aerodynamic.mptSeconds}s` : '—'}</Text>
               <Text style={styles.miniScoreLabel}>MPT</Text>
             </View>
             <View style={styles.miniScoreDivider} />
             <View style={styles.miniScore}>
-              <Text style={styles.miniScoreValue}>1.1</Text>
+              <Text style={styles.miniScoreValue}>{hasData ? `${latest!.aerodynamic.szRatio}` : '—'}</Text>
               <Text style={styles.miniScoreLabel}>S/Z</Text>
             </View>
             <View style={styles.miniScoreDivider} />
             <View style={styles.miniScore}>
-              <Text style={[styles.miniScoreValue, { color: '#EF6C00' }]}>22</Text>
+              <Text style={[styles.miniScoreValue, { color: '#EF6C00' }]}>
+                {hasData && latest!.vfi ? `${latest!.vfi.fatigue + latest!.vfi.physicalDiscomfort}` : '—'}
+              </Text>
               <Text style={styles.miniScoreLabel}>VFI burden</Text>
             </View>
           </View>

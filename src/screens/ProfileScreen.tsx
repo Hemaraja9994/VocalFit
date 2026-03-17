@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors, spacing, borderRadius, typography } from '../utils/theme';
@@ -22,17 +21,26 @@ const PROFILE_MENU = [
 
 export default function ProfileScreen({ navigation }: any) {
   const user = useStore((s) => s.user);
-  const displayName = user?.name || 'Dr. Voice User';
-  const displayRole = user ? `${user.profession} · ${user.dailySpeakingHours} hrs/day` : 'University faculty · 6 hrs/day';
+  const assessments = useStore((s) => s.assessments);
+  const todayLog = useStore((s) => s.todayLog);
+  const displayName = user?.name || 'Voice User';
+  const displayRole = user ? `${user.profession} · ${user.dailySpeakingHours} hrs/day` : 'Tap "Edit profile" to set up';
   const initials = displayName.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase();
+  const latestScore = assessments.length > 0 ? assessments[assessments.length - 1].vocalFitnessScore : 0;
+  const streakDays = todayLog?.streakDays ?? 0;
 
-  const handleMenuPress = (id: string, label: string) => {
-    if (id === 'history') {
-      navigation.navigate('History');
-    } else if (id === 'export') {
-      navigation.navigate('ExportReport');
-    } else {
-      Alert.alert(label, `The ${label.toLowerCase()} screen will be available in a future update.`);
+  const handleMenuPress = (id: string, _label: string) => {
+    const routes: Record<string, string> = {
+      edit: 'EditProfile',
+      medical: 'MedicalHistory',
+      history: 'History',
+      hygiene: 'VocalHygieneSettings',
+      export: 'ExportReport',
+      about: 'About',
+    };
+    const route = routes[id];
+    if (route) {
+      navigation.navigate(route);
     }
   };
 
@@ -58,17 +66,17 @@ export default function ProfileScreen({ navigation }: any) {
         {/* Stats Row */}
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>12</Text>
+            <Text style={styles.statValue}>{assessments.length}</Text>
             <Text style={styles.statLabel}>Assessments</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>7</Text>
+            <Text style={styles.statValue}>{streakDays}</Text>
             <Text style={styles.statLabel}>Day streak</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>78</Text>
+            <Text style={styles.statValue}>{latestScore || '—'}</Text>
             <Text style={styles.statLabel}>Vocal score</Text>
           </View>
         </View>

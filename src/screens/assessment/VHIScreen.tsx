@@ -11,6 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, spacing, borderRadius, typography } from '../../utils/theme';
 import { VHI_ITEMS, VHI_SCALE_OPTIONS } from '../../data/vhiItems';
 import { rateVHI, getRatingColor } from '../../data/normativeData';
+import { useStore } from '../../store/useStore';
 
 const ITEMS_PER_PAGE = 5;
 const TOTAL_PAGES = Math.ceil(VHI_ITEMS.length / ITEMS_PER_PAGE);
@@ -48,6 +49,18 @@ export default function VHIScreen({ navigation }: any) {
 
   const handleFinish = () => {
     const severity = rateVHI(totalScore);
+
+    // Save VHI results to the store
+    const store = useStore.getState();
+    if (!store.currentAssessment) store.startAssessment();
+    store.updateVHI({
+      functional: subscaleScores.functional,
+      physical: subscaleScores.physical,
+      emotional: subscaleScores.emotional,
+      totalScore,
+      severity: severity as any,
+    });
+
     Alert.alert(
       'VHI Complete',
       `Total Score: ${totalScore}/120 (${severity})\n\nFunctional: ${subscaleScores.functional}/40\nPhysical: ${subscaleScores.physical}/40\nEmotional: ${subscaleScores.emotional}/40`,

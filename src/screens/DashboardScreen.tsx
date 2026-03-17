@@ -15,27 +15,49 @@ import { useStore } from '../store/useStore';
 import { DEFAULT_HYGIENE_HABITS, WATER_GOAL } from '../data/hygieneDefaults';
 
 export default function DashboardScreen() {
-  const { todayLog, setTodayLog, toggleHabit, addWater } = useStore();
+  const { todayLog, setTodayLog, toggleHabit, addWater, assessments, currentPlan } = useStore();
 
-  // Initialize today's log with sample data
+  // Initialize today's log with clean slate (zero values)
   useEffect(() => {
     if (!todayLog) {
       setTodayLog({
         date: new Date().toISOString().split('T')[0],
-        waterGlasses: 4,
+        waterGlasses: 0,
         waterGoal: WATER_GOAL,
-        habits: DEFAULT_HYGIENE_HABITS.map((h, i) => ({
+        habits: DEFAULT_HYGIENE_HABITS.map((h) => ({
           ...h,
-          completed: i < 2, // First 2 completed as demo
+          completed: false,
         })),
-        streakDays: 7,
+        streakDays: 0,
       });
     }
   }, []);
 
+  // Get latest assessment data (if any)
+  const latestAssessment = assessments.length > 0 ? assessments[assessments.length - 1] : null;
+  const mptValue = latestAssessment?.aerodynamic?.mptSeconds ?? null;
+  const szValue = latestAssessment?.aerodynamic?.szRatio ?? null;
+  const vfiData = latestAssessment?.vfi ?? null;
+  const fitnessScore = latestAssessment?.vocalFitnessScore ?? null;
+
+  // Therapy progress from store
+  const therapyTotal = currentPlan?.exercises.length ?? 0;
+  const therapyDone = currentPlan?.completedCount ?? 0;
+  const therapyProgress = therapyTotal > 0 ? therapyDone / therapyTotal : 0;
+
+  // VFI calculations from actual data
+  const vfiFatigue = vfiData?.fatigue ?? 0;
+  const vfiDiscomfort = vfiData?.physicalDiscomfort ?? 0;
+  const vfiRecovery = vfiData?.restRecovery ?? 0;
+  const fatigueBurden = vfiFatigue + vfiDiscomfort;
+  const fatiguePct = fatigueBurden > 0 ? ((fatigueBurden / 80) * 100) : 0;
+  const fatigueSeverity = fatigueBurden < 15 ? 'Minimal' : fatigueBurden < 25 ? 'Mild' : fatigueBurden < 40 ? 'Moderate' : 'Severe';
+
   const completedHabits = todayLog?.habits.filter((h) => h.completed).length ?? 0;
   const totalHabits = todayLog?.habits.length ?? 1;
   const waterProgress = (todayLog?.waterGlasses ?? 0) / WATER_GOAL;
+
+  const hasAssessment = latestAssessment !== null;
 
   return (
     <View style={styles.screen}>
@@ -62,39 +84,43 @@ export default function DashboardScreen() {
           <View style={styles.heroDecor2} />
           <Text style={styles.heroLabel}>VOCAL FITNESS SCORE</Text>
           <View style={styles.heroScoreRow}>
-            <Text style={styles.heroScore}>78</Text>
-            <Text style={styles.heroMax}>/100</Text>
+            <Text style={styles.heroScore}>{fitnessScore ?? '—'}</Text>
+            {fitnessScore !== null && <Text style={styles.heroMax}>/100</Text>}
           </View>
-          <Text style={styles.heroDelta}>+5 pts from last week</Text>
+          <Text style={styles.heroDelta}>
+            {hasAssessment
+              ? `Based on ${assessments.length} assessment${assessments.length > 1 ? 's' : ''}`
+              : 'Complete an assessment to see your score'}
+          </Text>
         </LinearGradient>
 
         {/* Metric Grid */}
         <View style={styles.metricGrid}>
           <MetricCard
             label="MPT"
-            value="18.2"
-            unit="s"
-            statusText="Normal range"
-            statusColor={colors.primary}
+            value={mptValue !== null ? `${mptValue}` : '—'}
+            unit={mptValue !== null ? 's' : ''}
+            statusText={mptValue !== null ? 'Measured' : 'Not yet recorded'}
+            statusColor={mptValue !== null ? colors.primary : colors.lightText}
           />
           <MetricCard
             label="S/Z RATIO"
-            value="1.1"
-            statusText="Healthy"
-            statusColor={colors.primary}
+            value={szValue !== null ? `${szValue}` : '—'}
+            statusText={szValue !== null ? 'Measured' : 'Not yet recorded'}
+            statusColor={szValue !== null ? colors.primary : colors.lightText}
           />
           <MetricCard
             label="HYDRATION"
             value={`${todayLog?.waterGlasses ?? 0}`}
             unit={`/${WATER_GOAL}`}
-            statusText={waterProgress >= 1 ? 'Goal met!' : 'Almost there'}
+            statusText={waterProgress >= 1 ? 'Goal met!' : waterProgress > 0 ? 'Keep going' : 'Start drinking'}
             statusColor={waterProgress >= 1 ? colors.primary : colors.warning}
           />
           <MetricCard
             label="STREAK"
             value={`${todayLog?.streakDays ?? 0}`}
             unit="days"
-            statusText="Personal best!"
+            statusText={todayLog?.streakDays ? 'Keep it up!' : 'Start your streak'}
             statusColor={colors.primary}
           />
         </View>
@@ -159,16 +185,26 @@ export default function DashboardScreen() {
           <Text style={styles.sectionTitle}>Today's therapy</Text>
           <View style={styles.therapyProgress}>
             <ProgressRing
-              progress={0.6}
+              progress={therapyProgress}
               size={80}
               strokeWidth={8}
-              value="3/5"
+              value={therapyTotal > 0 ? `${therapyDone}/${therapyTotal}` : '0'}
               label="exercises"
             />
             <View style={styles.therapyInfo}>
-              <Text style={styles.therapyInfoTitle}>Keep going!</Text>
+              <Text style={styles.therapyInfoTitle}>
+                {therapyTotal === 0
+                  ? 'No plan yet'
+                  : therapyDone === therapyTotal
+                  ? 'All done!'
+                  : 'Keep going!'}
+              </Text>
               <Text style={styles.therapyInfoSubtitle}>
-                2 more exercises to complete today's vocal workout
+                {therapyTotal === 0
+                  ? 'Complete an assessment to generate your therapy plan'
+                  : therapyDone === therapyTotal
+                  ? 'Great job completing your vocal workout today'
+                  : `${therapyTotal - therapyDone} more exercise${therapyTotal - therapyDone > 1 ? 's' : ''} to complete today's vocal workout`}
               </Text>
             </View>
           </View>
@@ -182,33 +218,49 @@ export default function DashboardScreen() {
               <Text style={styles.vfiBadgeText}>VFI</Text>
             </View>
           </View>
-          <View style={styles.vfiRow}>
-            <View style={styles.vfiItem}>
-              <View style={[styles.vfiDot, { backgroundColor: '#EF6C00' }]} />
-              <Text style={styles.vfiLabel}>Tiredness</Text>
-              <Text style={[styles.vfiValue, { color: '#EF6C00' }]}>14/44</Text>
+          {!hasAssessment || !vfiData ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateText}>
+                Complete the VFI questionnaire in your assessment to see fatigue metrics here.
+              </Text>
             </View>
-            <View style={styles.vfiItem}>
-              <View style={[styles.vfiDot, { backgroundColor: '#E53935' }]} />
-              <Text style={styles.vfiLabel}>Discomfort</Text>
-              <Text style={[styles.vfiValue, { color: '#E53935' }]}>8/36</Text>
-            </View>
-            <View style={styles.vfiItem}>
-              <View style={[styles.vfiDot, { backgroundColor: '#43A047' }]} />
-              <Text style={styles.vfiLabel}>Recovery</Text>
-              <Text style={[styles.vfiValue, { color: '#43A047' }]}>28/36</Text>
-            </View>
-          </View>
-          <View style={styles.vfiBurdenRow}>
-            <Text style={styles.vfiBurdenLabel}>Fatigue burden</Text>
-            <Text style={styles.vfiBurdenValue}>22/80 — Mild</Text>
-          </View>
-          <View style={styles.vfiBarTrack}>
-            <View style={[styles.vfiBarFill, { width: '27.5%' }]} />
-          </View>
-          <Text style={styles.vfiTip}>
-            Your recovery score is strong. Keep up your vocal rest habits!
-          </Text>
+          ) : (
+            <>
+              <View style={styles.vfiRow}>
+                <View style={styles.vfiItem}>
+                  <View style={[styles.vfiDot, { backgroundColor: '#EF6C00' }]} />
+                  <Text style={styles.vfiLabel}>Tiredness</Text>
+                  <Text style={[styles.vfiValue, { color: '#EF6C00' }]}>{vfiFatigue}/44</Text>
+                </View>
+                <View style={styles.vfiItem}>
+                  <View style={[styles.vfiDot, { backgroundColor: '#E53935' }]} />
+                  <Text style={styles.vfiLabel}>Discomfort</Text>
+                  <Text style={[styles.vfiValue, { color: '#E53935' }]}>{vfiDiscomfort}/36</Text>
+                </View>
+                <View style={styles.vfiItem}>
+                  <View style={[styles.vfiDot, { backgroundColor: '#43A047' }]} />
+                  <Text style={styles.vfiLabel}>Recovery</Text>
+                  <Text style={[styles.vfiValue, { color: '#43A047' }]}>{vfiRecovery}/36</Text>
+                </View>
+              </View>
+              <View style={styles.vfiBurdenRow}>
+                <Text style={styles.vfiBurdenLabel}>Fatigue burden</Text>
+                <Text style={styles.vfiBurdenValue}>{fatigueBurden}/80 — {fatigueSeverity}</Text>
+              </View>
+              <View style={styles.vfiBarTrack}>
+                <View style={[styles.vfiBarFill, { width: `${fatiguePct.toFixed(1)}%` as any }]} />
+              </View>
+              <Text style={styles.vfiTip}>
+                {fatigueSeverity === 'Minimal'
+                  ? 'Your fatigue levels are minimal. Great vocal health!'
+                  : fatigueSeverity === 'Mild'
+                  ? 'Mild fatigue detected. Keep up your vocal rest habits.'
+                  : fatigueSeverity === 'Moderate'
+                  ? 'Moderate fatigue. Consider more vocal rest and hydration.'
+                  : 'High fatigue burden. Please consult your voice pathologist.'}
+              </Text>
+            </>
+          )}
         </View>
 
         <View style={{ height: 40 }} />
@@ -414,6 +466,18 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.gray,
     lineHeight: 18,
+  },
+
+  // Empty state
+  emptyState: {
+    paddingVertical: spacing.md,
+  },
+  emptyStateText: {
+    fontSize: 13,
+    color: colors.lightText,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    lineHeight: 19,
   },
 
   // VFI Monitor

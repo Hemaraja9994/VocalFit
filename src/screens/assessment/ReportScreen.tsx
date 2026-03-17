@@ -32,48 +32,48 @@ function severityToRating(severity: string): NormRating {
   return 'severe';
 }
 
-// ─── Sample assessment data (will come from store in production) ─
-const SAMPLE_DATA = {
+// Default empty assessment data used when no actual data exists
+const EMPTY_DATA = {
   date: new Date().toISOString(),
   aerodynamic: {
-    mptSeconds: 18.2,
+    mptSeconds: 0,
     mptRating: 'normal' as NormRating,
-    sSeconds: 16.5,
-    zSeconds: 15.0,
-    szRatio: 1.1,
+    sSeconds: 0,
+    zSeconds: 0,
+    szRatio: 0,
     szRating: 'normal' as NormRating,
   },
   acoustic: {
-    fundamentalFrequency: 210,
+    fundamentalFrequency: 0,
     f0Rating: 'normal' as NormRating,
-    jitterPercent: 0.8,
+    jitterPercent: 0,
     jitterRating: 'normal' as NormRating,
-    shimmerPercent: 3.2,
+    shimmerPercent: 0,
     shimmerRating: 'normal' as NormRating,
-    hnrDb: 22,
+    hnrDb: 0,
     hnrRating: 'normal' as NormRating,
   },
   perceptual: {
-    grade: 1,
-    roughness: 1,
+    grade: 0,
+    roughness: 0,
     breathiness: 0,
     asthenia: 0,
-    strain: 2,
-    totalScore: 4,
+    strain: 0,
+    totalScore: 0,
   },
   vhi: {
-    functional: 8,
-    physical: 12,
-    emotional: 6,
-    totalScore: 26,
-    severity: 'mild' as const,
+    functional: 0,
+    physical: 0,
+    emotional: 0,
+    totalScore: 0,
+    severity: 'minimal' as const,
   },
   vfi: {
-    fatigue: 14,
-    physicalDiscomfort: 8,
-    restRecovery: 28,
-    totalScore: 50,
-    severity: 'mild' as const,
+    fatigue: 0,
+    physicalDiscomfort: 0,
+    restRecovery: 0,
+    totalScore: 0,
+    severity: 'minimal' as const,
   },
 };
 
@@ -85,8 +85,17 @@ interface DomainRow {
 }
 
 export default function ReportScreen({ navigation }: any) {
-  const { setTherapyPlan } = useStore();
-  const data = SAMPLE_DATA;
+  const { setTherapyPlan, currentAssessment, assessments } = useStore();
+  // Use current in-progress assessment, or latest saved, or empty defaults
+  const storeData = currentAssessment || (assessments.length > 0 ? assessments[assessments.length - 1] : null);
+  const data = {
+    date: storeData?.date || EMPTY_DATA.date,
+    aerodynamic: storeData?.aerodynamic || EMPTY_DATA.aerodynamic,
+    acoustic: storeData?.acoustic || EMPTY_DATA.acoustic,
+    perceptual: storeData?.perceptual || EMPTY_DATA.perceptual,
+    vhi: storeData?.vhi || EMPTY_DATA.vhi,
+    vfi: storeData?.vfi || EMPTY_DATA.vfi,
+  };
 
   // Calculate vocal fitness score
   const fitnessScore = useMemo(() => calculateVocalFitnessScore({
@@ -153,10 +162,37 @@ export default function ReportScreen({ navigation }: any) {
       exercises: planItems,
       completedCount: 0,
     });
+    // Save the current assessment to the store
+    const store = useStore.getState();
+    if (store.currentAssessment) {
+      const fitnessScoreVal = calculateVocalFitnessScore({
+        mptRating: data.aerodynamic.mptRating,
+        szRating: data.aerodynamic.szRating,
+        f0Rating: data.acoustic.f0Rating,
+        jitterRating: data.acoustic.jitterRating,
+        shimmerRating: data.acoustic.shimmerRating,
+        hnrRating: data.acoustic.hnrRating,
+        grbasTotal: data.perceptual.totalScore,
+        vhiTotal: data.vhi.totalScore,
+      });
+      store.saveAssessment({
+        ...store.currentAssessment as any,
+        vocalFitnessScore: fitnessScoreVal,
+        interpretation: {
+          overallRating: fitnessScoreVal >= 80 ? 'excellent' : fitnessScoreVal >= 60 ? 'good' : fitnessScoreVal >= 40 ? 'fair' : 'poor',
+          primaryConcerns: concerns,
+          recommendations: [],
+        },
+      });
+    }
+
     Alert.alert(
       'Therapy plan generated',
       `${recommendedExercises.length} exercises have been added to your Therapy tab based on your assessment results.`,
-      [{ text: 'View plan', onPress: () => navigation.navigate('AssessmentHub') }]
+      [{ text: 'Go to Therapy', onPress: () => {
+        // Navigate to therapy tab
+        navigation.getParent()?.navigate('Therapy');
+      }}]
     );
   };
 
