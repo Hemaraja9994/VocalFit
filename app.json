@@ -3,11 +3,6 @@
     "name": "VocalFit",
     "slug": "vocalfit",
     "owner": "hemaraja9994",
-    "extra": {
-      "eas": {
-        "projectId": "ca119686-7da3-485f-aa83-49224bdfaea0"
-      }
-    },
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -32,7 +27,11 @@
         "backgroundColor": "#A4D65E"
       },
       "edgeToEdgeEnabled": true,
-      "permissions": ["RECORD_AUDIO"]
+      "permissions": [
+        "RECORD_AUDIO",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -44,6 +43,11 @@
           "microphonePermission": "VocalFit needs microphone access to record your voice for assessment."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "996b564e-dc3b-4650-b285-bf4b6971d24c"
+      }
+    }
   }
 }
