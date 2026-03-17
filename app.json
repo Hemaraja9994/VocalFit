@@ -1,0 +1,49 @@
+{
+  "expo": {
+    "name": "VocalFit",
+    "slug": "vocalfit",
+    "owner": "hemaraja9994",
+    "extra": {
+      "eas": {
+        "projectId": "ca119686-7da3-485f-aa83-49224bdfaea0"
+      }
+    },
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#A4D65E"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.vocalfit.app",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "VocalFit needs microphone access to record your voice for vocal assessment."
+      }
+    },
+    "android": {
+      "package": "com.vocalfit.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#A4D65E"
+      },
+      "edgeToEdgeEnabled": true,
+      "permissions": ["RECORD_AUDIO"]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-av",
+        {
+          "microphonePermission": "VocalFit needs microphone access to record your voice for assessment."
+        }
+      ]
+    ]
+  }
+}
