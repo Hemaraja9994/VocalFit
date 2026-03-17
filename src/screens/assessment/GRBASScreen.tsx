@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, spacing, borderRadius, typography } from '../../utils/theme';
 import { GRBAS_LABELS, GRBAS_SCALE_LABELS } from '../../data/normativeData';
+import { useStore } from '../../store/useStore';
 
 const GRBAS_DESCRIPTIONS: Record<string, string[]> = {
   grade: [
@@ -137,6 +138,16 @@ export default function GRBASScreen({ navigation }: any) {
         <TouchableOpacity
           style={styles.saveBtn}
           onPress={() => {
+            const store = useStore.getState();
+            if (!store.currentAssessment) store.startAssessment();
+            store.updatePerceptual({
+              grade: scores.grade,
+              roughness: scores.roughness,
+              breathiness: scores.breathiness,
+              asthenia: scores.asthenia,
+              strain: scores.strain,
+              totalScore: total,
+            });
             Alert.alert('Saved', `GRBAS scores saved.\nG:${scores.grade} R:${scores.roughness} B:${scores.breathiness} A:${scores.asthenia} S:${scores.strain}\nTotal: ${total}/15`);
             navigation.goBack();
           }}

@@ -62,7 +62,25 @@ export default function MPTScreen({ navigation }: any) {
 
     try {
       const { recording: rec } = await Audio.Recording.createAsync({
-        ...Audio.RecordingOptionsPresets.HIGH_QUALITY,
+        android: {
+          extension: '.wav',
+          outputFormat: 2, // THREE_GPP for better sensitivity
+          audioEncoder: 1, // AMR_NB
+          sampleRate: 44100,
+          numberOfChannels: 1,
+          bitRate: 128000,
+        },
+        ios: {
+          extension: '.wav',
+          audioQuality: 127, // MAX
+          sampleRate: 44100,
+          numberOfChannels: 1,
+          bitRate: 128000,
+          linearPCMBitDepth: 16,
+          linearPCMIsBigEndian: false,
+          linearPCMIsFloat: false,
+        },
+        web: {},
         isMeteringEnabled: true,
       });
       setRecording(rec);
@@ -75,15 +93,17 @@ export default function MPTScreen({ navigation }: any) {
         setElapsed(Math.round((now - startTimeRef.current) / 100) / 10);
       }, 100);
 
-      // Metering for VU meter
+      // Metering for VU meter — poll every 50ms for better responsiveness
       meteringRef.current = setInterval(async () => {
         try {
           const status = await rec.getStatusAsync();
           if (status.isRecording && status.metering !== undefined) {
-            setMeteringDb(status.metering);
+            // Boost sensitivity: shift metering range up for better visual feedback
+            const boosted = Math.min(status.metering + 20, 0);
+            setMeteringDb(boosted);
           }
         } catch {}
-      }, 80);
+      }, 50);
     } catch (err) {
       Alert.alert('Error', 'Could not start recording. Please try again.');
     }
@@ -232,7 +252,18 @@ export default function MPTScreen({ navigation }: any) {
               <TouchableOpacity
                 style={styles.outlineBtn}
                 onPress={() => {
-                  // Save to store and go back
+                  const store = useStore.getState();
+                  if (!store.currentAssessment) {
+                    store.startAssessment();
+                  }
+                  store.updateAerodynamic({
+                    mptSeconds: result!,
+                    mptRating: rating!,
+                    sSeconds: 0,
+                    zSeconds: 0,
+                    szRatio: 0,
+                    szRating: 'normal',
+                  });
                   Alert.alert('Saved', `MPT of ${result}s saved to your assessment.`);
                   navigation.goBack();
                 }}

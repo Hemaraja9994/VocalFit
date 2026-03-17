@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, spacing, borderRadius, typography } from '../../utils/theme';
+import { useStore } from '../../store/useStore';
 
 const FLOW_STEPS = [
   { id: 'MPT', label: 'MPT', desc: 'Maximum phonation time', required: true },
@@ -21,6 +22,14 @@ const FLOW_STEPS = [
 export default function AssessmentFlowScreen({ navigation }: any) {
   const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set());
   const [currentStep, setCurrentStep] = useState(0);
+
+  // Start a new assessment session in the store when flow begins
+  React.useEffect(() => {
+    const store = useStore.getState();
+    if (!store.currentAssessment) {
+      store.startAssessment();
+    }
+  }, []);
 
   const markComplete = (stepId: string) => {
     setCompletedSteps((prev) => new Set([...prev, stepId]));

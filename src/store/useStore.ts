@@ -19,6 +19,7 @@ interface AppState {
   // User
   user: UserProfile | null;
   setUser: (user: UserProfile) => void;
+  updateUser: (updates: Partial<UserProfile>) => void;
   isOnboarded: boolean;
   setOnboarded: (val: boolean) => void;
 
@@ -50,6 +51,9 @@ export const useStore = create<AppState>((set, get) => ({
   // ─── User ─────────────────────────────────────────────────────
   user: null,
   setUser: (user) => set({ user }),
+  updateUser: (updates) => set((s) => ({
+    user: s.user ? { ...s.user, ...updates } : null,
+  })),
   isOnboarded: false,
   setOnboarded: (val) => set({ isOnboarded: val }),
 

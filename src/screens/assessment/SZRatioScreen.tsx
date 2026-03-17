@@ -10,6 +10,7 @@ import { Audio } from 'expo-av';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, spacing, borderRadius, typography } from '../../utils/theme';
 import { rateSZRatio, getRatingColor, getRatingLabel } from '../../data/normativeData';
+import { useStore } from '../../store/useStore';
 
 type Phase = 'intro' | 's_ready' | 's_recording' | 'z_ready' | 'z_recording' | 'done';
 
@@ -207,6 +208,17 @@ export default function SZRatioScreen({ navigation }: any) {
                 <Text style={styles.primaryBtnText}>Try again</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.outlineBtn} onPress={() => {
+                const store = useStore.getState();
+                if (!store.currentAssessment) store.startAssessment();
+                const existingAero = store.currentAssessment?.aerodynamic;
+                store.updateAerodynamic({
+                  mptSeconds: existingAero?.mptSeconds ?? 0,
+                  mptRating: existingAero?.mptRating ?? 'normal',
+                  sSeconds: sTime,
+                  zSeconds: zTime,
+                  szRatio: ratio,
+                  szRating: rating!,
+                });
                 Alert.alert('Saved', `S/Z ratio of ${ratio} saved to your assessment.`);
                 navigation.goBack();
               }} activeOpacity={0.85}>
