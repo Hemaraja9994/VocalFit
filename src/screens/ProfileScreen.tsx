@@ -102,6 +102,7 @@ export default function ProfileScreen({ navigation }: any) {
 
         {/* Version */}
         <Text style={styles.version}>VocalFit v1.0.0 · Phase 1</Text>
+        <Text style={styles.credit}>Developed & Designed by Hemaraja Nayaka S</Text>
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -247,5 +248,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 12,
     color: colors.placeholder,
+  },
+  credit: {
+    textAlign: 'center',
+    fontSize: 12,
+    color: colors.lightText,
+    marginTop: 6,
+    fontStyle: 'italic',
   },
 });
